@@ -573,8 +573,28 @@ INSERT INTO public.categories (name, slug, description) VALUES
 ON CONFLICT (slug) DO NOTHING;
 
 -- -----------------------------------------------------------------------------
--- 11. Default admin / professor accounts (edit emails if needed)
+-- 11. Default admin / professor accounts
 -- -----------------------------------------------------------------------------
+-- Admin by UID (primary)
+UPDATE auth.users
+SET raw_user_meta_data = jsonb_set(
+  COALESCE(raw_user_meta_data, '{}'::jsonb),
+  '{role}',
+  '"admin"'
+)
+WHERE id = 'cb83aac6-a25b-4886-b900-9ac25e4a8d31';
+
+INSERT INTO public.profiles (id, full_name, email, role)
+SELECT
+  u.id,
+  COALESCE(u.raw_user_meta_data ->> 'full_name', u.raw_user_meta_data ->> 'display_name', 'Admin'),
+  COALESCE(u.email, ''),
+  'admin'
+FROM auth.users u
+WHERE u.id = 'cb83aac6-a25b-4886-b900-9ac25e4a8d31'
+ON CONFLICT (id) DO UPDATE SET role = 'admin', updated_at = NOW();
+
+-- Optional: also match by email
 UPDATE auth.users
 SET raw_user_meta_data = jsonb_set(
   COALESCE(raw_user_meta_data, '{}'::jsonb),
@@ -596,7 +616,10 @@ SET role = COALESCE(u.raw_user_meta_data ->> 'role', 'student'),
     updated_at = NOW()
 FROM auth.users u
 WHERE p.id = u.id
-  AND u.email IN ('admi.000000000@ejust.edu.eg', 'doctor.000000000@ejust.edu.eg');
+  AND (
+    u.id = 'cb83aac6-a25b-4886-b900-9ac25e4a8d31'
+    OR u.email IN ('admi.000000000@ejust.edu.eg', 'doctor.000000000@ejust.edu.eg')
+  );
 
 -- -----------------------------------------------------------------------------
 -- 12. Recalculate cached counters
