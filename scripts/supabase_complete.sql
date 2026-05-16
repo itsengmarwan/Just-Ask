@@ -518,12 +518,24 @@ CREATE POLICY "question_images_owner_delete" ON storage.objects
   FOR DELETE USING (bucket_id = 'question_images' AND auth.uid() = owner);
 
 DROP POLICY IF EXISTS "Public Access to Images" ON storage.objects;
+DROP POLICY IF EXISTS "images_public_read" ON storage.objects;
 CREATE POLICY "images_public_read" ON storage.objects
   FOR SELECT USING (bucket_id = 'images');
 
 DROP POLICY IF EXISTS "Allow Authenticated Users to Upload" ON storage.objects;
+DROP POLICY IF EXISTS "images_auth_upload" ON storage.objects;
 CREATE POLICY "images_auth_upload" ON storage.objects
   FOR INSERT WITH CHECK (bucket_id = 'images' AND auth.role() = 'authenticated');
+
+DROP POLICY IF EXISTS "Allow Users to Update Their Own Images" ON storage.objects;
+DROP POLICY IF EXISTS "images_owner_update" ON storage.objects;
+CREATE POLICY "images_owner_update" ON storage.objects
+  FOR UPDATE USING (bucket_id = 'images' AND auth.uid() = owner);
+
+DROP POLICY IF EXISTS "Allow Users to Delete Their Own Images" ON storage.objects;
+DROP POLICY IF EXISTS "images_owner_delete" ON storage.objects;
+CREATE POLICY "images_owner_delete" ON storage.objects
+  FOR DELETE USING (bucket_id = 'images' AND auth.uid() = owner);
 
 -- -----------------------------------------------------------------------------
 -- 9. Realtime (enable in Dashboard if this line errors)
