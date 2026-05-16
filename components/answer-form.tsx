@@ -13,6 +13,7 @@ import { Shield } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Answer } from '@/lib/types'
 import { useRouter } from 'next/navigation'
+import { ensureProfile } from '@/lib/ensure-profile'
 
 interface AnswerFormProps {
   questionId: string
@@ -34,11 +35,11 @@ export function AnswerForm({ questionId, userId, onAnswerSubmitted }: AnswerForm
 
     const supabase = createClient()
 
-    // Ensure user profile exists
-    const { data: profile } = await supabase.from('profiles').select('id').eq('id', userId).single()
-
-    if (!profile) {
-      await supabase.from('profiles').insert({ id: userId, full_name: 'Unknown User', email: '' })
+    const profileCheck = await ensureProfile(supabase)
+    if (!profileCheck.ok) {
+      setError(profileCheck.error || 'Could not verify your profile')
+      setIsLoading(false)
+      return
     }
 
     const { data, error } = await supabase

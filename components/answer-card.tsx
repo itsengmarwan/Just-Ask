@@ -12,6 +12,8 @@ import type { Answer } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
+import { ensureProfile } from '@/lib/ensure-profile'
+import { toggleAnswerUpvote } from '@/lib/question-mutations'
 
 interface AnswerCardProps {
   answer: Answer
@@ -36,17 +38,21 @@ export function AnswerCard({ answer, currentUserId, questionOwnerId, onAccept }:
     if (!currentUserId) return toast.error('Please sign in to upvote')
     setIsUpvoting(true)
     const supabase = createClient()
+    const profileCheck = await ensureProfile(supabase)
+    if (!profileCheck.ok) {
+      toast.error(profileCheck.error || 'Could not verify your profile')
+      setIsUpvoting(false)
+      return
+    }
 
-    if (hasUpvoted) {
-      const { error } = await supabase.from('answer_upvotes').delete().eq('user_id', currentUserId).eq('answer_id', answer.id)
-      if (error) toast.error('Failed to remove upvote')
-      else { setUpvoteCount((prev) => Math.max(0, prev - 1)); setHasUpvoted(false) }
+    const { error } = await toggleAnswerUpvote(supabase, currentUserId, answer.id, hasUpvoted)
+    if (error) {
+      if (error.code === '23505') toast.error('Already upvoted')
+      else toast.error(error.message || 'Failed to update upvote')
     } else {
-      const { error } = await supabase.from('answer_upvotes').insert({ user_id: currentUserId, answer_id: answer.id })
-      if (error) {
-        if (error.code === '23505') toast.error('Already upvoted')
-        else toast.error('Failed to upvote')
-      } else { setUpvoteCount((prev) => prev + 1); setHasUpvoted(true) }
+      setUpvoteCount((prev) => (hasUpvoted ? Math.max(0, prev - 1) : prev + 1))
+      setHasUpvoted(!hasUpvoted)
+      router.refresh()
     }
     setIsUpvoting(false)
   }

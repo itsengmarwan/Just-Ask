@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { formatDistanceToNow } from 'date-fns'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent } from '@/components/ui/card'
@@ -13,6 +14,8 @@ import type { Question } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { ShareButton } from '@/components/share-button'
+import { ensureProfile } from '@/lib/ensure-profile'
+import { toggleQuestionUpvote } from '@/lib/question-mutations'
 
 interface QuestionCardProps {
   question: Question
@@ -20,6 +23,7 @@ interface QuestionCardProps {
 }
 
 export function QuestionCard({ question, currentUserId }: QuestionCardProps) {
+  const router = useRouter()
   const [upvoteCount, setUpvoteCount] = useState(question.upvotes_count || 0)
   const [hasUpvoted, setHasUpvoted] = useState(question.user_has_upvoted || false)
   const [isUpvoting, setIsUpvoting] = useState(false)
@@ -40,23 +44,21 @@ export function QuestionCard({ question, currentUserId }: QuestionCardProps) {
 
     setIsUpvoting(true)
     const supabase = createClient()
+    const profileCheck = await ensureProfile(supabase)
+    if (!profileCheck.ok) {
+      toast.error(profileCheck.error || 'Could not verify your profile')
+      setIsUpvoting(false)
+      return
+    }
 
-    if (hasUpvoted) {
-      const { error } = await supabase.from('question_upvotes').delete().eq('user_id', currentUserId).eq('question_id', question.id)
-      if (error) toast.error('Failed to remove upvote')
-      else {
-        setUpvoteCount((prev) => Math.max(0, prev - 1))
-        setHasUpvoted(false)
-      }
+    const { error } = await toggleQuestionUpvote(supabase, currentUserId, question.id, hasUpvoted)
+    if (error) {
+      if (error.code === '23505') toast.error('Already upvoted')
+      else toast.error(error.message || 'Failed to update upvote')
     } else {
-      const { error } = await supabase.from('question_upvotes').insert({ user_id: currentUserId, question_id: question.id })
-      if (error) {
-        if (error.code === '23505') toast.error('Already upvoted')
-        else toast.error('Failed to upvote')
-      } else {
-        setUpvoteCount((prev) => prev + 1)
-        setHasUpvoted(true)
-      }
+      setUpvoteCount((prev) => (hasUpvoted ? Math.max(0, prev - 1) : prev + 1))
+      setHasUpvoted(!hasUpvoted)
+      router.refresh()
     }
     setIsUpvoting(false)
   }

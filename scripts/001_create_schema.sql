@@ -150,6 +150,8 @@ CREATE TRIGGER on_auth_user_created
 CREATE OR REPLACE FUNCTION increment_question_upvotes()
 RETURNS TRIGGER
 LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
 AS $$
 BEGIN
   UPDATE public.questions SET upvotes_count = upvotes_count + 1 WHERE id = NEW.question_id;
@@ -163,6 +165,8 @@ $$;
 CREATE OR REPLACE FUNCTION decrement_question_upvotes()
 RETURNS TRIGGER
 LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
 AS $$
 BEGIN
   UPDATE public.questions SET upvotes_count = GREATEST(upvotes_count - 1, 0) WHERE id = OLD.question_id;
@@ -188,6 +192,8 @@ CREATE TRIGGER on_question_upvote_delete
 CREATE OR REPLACE FUNCTION increment_answer_upvotes()
 RETURNS TRIGGER
 LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
 AS $$
 BEGIN
   UPDATE public.answers SET upvotes_count = upvotes_count + 1 WHERE id = NEW.answer_id;
@@ -200,6 +206,8 @@ $$;
 CREATE OR REPLACE FUNCTION decrement_answer_upvotes()
 RETURNS TRIGGER
 LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
 AS $$
 BEGIN
   UPDATE public.answers SET upvotes_count = GREATEST(upvotes_count - 1, 0) WHERE id = OLD.answer_id;
@@ -225,6 +233,8 @@ CREATE TRIGGER on_answer_upvote_delete
 CREATE OR REPLACE FUNCTION update_answer_count()
 RETURNS TRIGGER
 LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
 AS $$
 BEGIN
   IF TG_OP = 'INSERT' THEN
@@ -258,3 +268,18 @@ CREATE INDEX IF NOT EXISTS idx_answers_question_id ON public.answers(question_id
 CREATE INDEX IF NOT EXISTS idx_answers_user_id ON public.answers(user_id);
 CREATE INDEX IF NOT EXISTS idx_question_upvotes_question_id ON public.question_upvotes(question_id);
 CREATE INDEX IF NOT EXISTS idx_answer_upvotes_answer_id ON public.answer_upvotes(answer_id);
+
+CREATE OR REPLACE FUNCTION public.increment_question_views(p_question_id UUID)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  UPDATE public.questions
+  SET views_count = views_count + 1
+  WHERE id = p_question_id AND is_deleted = false;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.increment_question_views(UUID) TO anon, authenticated;

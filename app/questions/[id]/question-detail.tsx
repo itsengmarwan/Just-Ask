@@ -16,15 +16,18 @@ import { AnswerForm } from '@/components/answer-form'
 import { ArrowBigUp, MessageSquare, Trash2, Edit, Save, Eye, CheckCircle2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { ensureProfile } from '@/lib/ensure-profile'
+import { softDeleteQuestion, toggleQuestionUpvote } from '@/lib/question-mutations'
 
 interface QuestionDetailProps {
   question: any
   answers: any[]
   currentUserId?: string
-  currentUserRole?: string 
+  currentUserRole?: string
+  isAdmin?: boolean
 }
 
-export function QuestionDetail({ question: initialQuestion, answers: initialAnswers, currentUserId, currentUserRole }: QuestionDetailProps) {
+export function QuestionDetail({ question: initialQuestion, answers: initialAnswers, currentUserId, currentUserRole, isAdmin: isAdminProp }: QuestionDetailProps) {
   const router = useRouter()
   
   const [question, setQuestion] = useState(initialQuestion)
@@ -38,18 +41,24 @@ export function QuestionDetail({ question: initialQuestion, answers: initialAnsw
   const [editContent, setEditContent] = useState(question.content)
   const [isSaving, setIsSaving] = useState(false)
 
-  const isAdmin = currentUserRole === 'admin'
+  const isAdmin = isAdminProp || currentUserRole === 'admin'
   const isOwner = currentUserId === question.user_id
+  const canManage = isAdmin || isOwner
 
   async function handleDelete() {
+    if (!canManage) {
+      toast.error('You do not have permission to delete this question')
+      return
+    }
     if (!confirm('Are you sure you want to delete this question?')) return
     const supabase = createClient()
-    const { error } = await supabase.from('questions').delete().eq('id', question.id)
+    const { error } = await softDeleteQuestion(supabase, question.id)
     if (error) {
-      toast.error('Failed to delete question')
+      toast.error(error.message || 'Failed to delete question')
     } else {
       toast.success('Question deleted successfully')
       router.push('/home')
+      router.refresh()
     }
   }
 
@@ -66,7 +75,7 @@ export function QuestionDetail({ question: initialQuestion, answers: initialAnsw
       .eq('id', question.id)
 
     if (error) {
-      toast.error('Failed to update question')
+      toast.error(error.message || 'Failed to update question')
     } else {
       toast.success('Question updated successfully')
       setQuestion({ ...question, title: editTitle, content: editContent })
@@ -80,24 +89,21 @@ export function QuestionDetail({ question: initialQuestion, answers: initialAnsw
     if (!currentUserId) return toast.error('Please sign in to upvote')
     setIsUpvoting(true)
     const supabase = createClient()
+    const profileCheck = await ensureProfile(supabase)
+    if (!profileCheck.ok) {
+      toast.error(profileCheck.error || 'Could not verify your profile')
+      setIsUpvoting(false)
+      return
+    }
 
-    if (hasUpvoted) {
-      const { error } = await supabase.from('question_upvotes').delete().eq('user_id', currentUserId).eq('question_id', question.id)
-      if (error) {
-        toast.error('Failed to remove upvote')
-      } else {
-        setUpvoteCount((prev: number) => Math.max(0, prev - 1))
-        setHasUpvoted(false)
-      }
+    const { error } = await toggleQuestionUpvote(supabase, currentUserId, question.id, hasUpvoted)
+    if (error) {
+      if (error.code === '23505') toast.error('Already upvoted')
+      else toast.error(error.message || 'Failed to update upvote')
     } else {
-      const { error } = await supabase.from('question_upvotes').insert({ user_id: currentUserId, question_id: question.id })
-      if (error) {
-        if (error.code === '23505') toast.error('Already upvoted')
-        else toast.error('Failed to upvote')
-      } else {
-        setUpvoteCount((prev: number) => prev + 1)
-        setHasUpvoted(true)
-      }
+      setUpvoteCount((prev: number) => (hasUpvoted ? Math.max(0, prev - 1) : prev + 1))
+      setHasUpvoted(!hasUpvoted)
+      router.refresh()
     }
     setIsUpvoting(false)
   }
@@ -125,12 +131,12 @@ export function QuestionDetail({ question: initialQuestion, answers: initialAnsw
             </div>
 
             <div className="flex gap-2 shrink-0">
-              {(isAdmin || isOwner) && !isEditing && (
+              {canManage && !isEditing && (
                 <Button variant="outline" size="icon" onClick={() => setIsEditing(true)} title="Edit Question" className="hover:text-primary hover:border-primary/50 transition-colors">
                   <Edit className="h-4 w-4" />
                 </Button>
               )}
-              {(isAdmin || isOwner) && !isEditing && (
+              {canManage && !isEditing && (
                 <Button variant="destructive" size="icon" onClick={handleDelete} title="Delete Question" className="hover:bg-destructive/90">
                   <Trash2 className="h-4 w-4" />
                 </Button>

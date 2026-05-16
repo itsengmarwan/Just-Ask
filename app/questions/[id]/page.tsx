@@ -93,13 +93,9 @@ async function getAnswers(questionId: string, userId?: string) {
 }
 
 // 🐛 تم الإصلاح: الزيادة أصبحت ديناميكية تعتمد على الرقم الحالي
-async function incrementViewCount(id: string, currentViews: number) {
+async function incrementViewCount(id: string) {
   const supabase = await createClient()
-  await supabase
-    .from('questions')
-    .update({ views_count: currentViews + 1 })
-    .eq('id', id)
-    .catch(() => {})
+  await supabase.rpc('increment_question_views', { p_question_id: id }).catch(() => {})
 }
 
 export default async function QuestionPage(props: { params: Promise<{ id: string }> }) {
@@ -111,6 +107,12 @@ export default async function QuestionPage(props: { params: Promise<{ id: string
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
+  let isAdmin = user?.user_metadata?.role === 'admin'
+  if (user && !isAdmin) {
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle()
+    isAdmin = profile?.role === 'admin'
+  }
+
   const [question, answers] = await Promise.all([
     getQuestion(id, user?.id),
     getAnswers(id, user?.id),
@@ -121,7 +123,7 @@ export default async function QuestionPage(props: { params: Promise<{ id: string
   }
 
   // تمرير عدد المشاهدات الحالي
-  incrementViewCount(id, (question as Question).views_count || 0)
+  incrementViewCount(id)
 
   return (
     <div className="min-h-screen bg-background relative">
@@ -143,6 +145,7 @@ export default async function QuestionPage(props: { params: Promise<{ id: string
           answers={answers}
           currentUserId={user?.id}
           currentUserRole={user?.user_metadata?.role}
+          isAdmin={isAdmin}
         />
       </main>
     </div>

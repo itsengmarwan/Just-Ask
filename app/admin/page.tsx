@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Spinner } from '@/components/ui/spinner'
 import { Trash2, ShieldAlert, Users, MessageSquare, AlertOctagon, Edit } from 'lucide-react'
 import { toast } from 'sonner'
+import { softDeleteQuestion } from '@/lib/question-mutations'
 import { formatDistanceToNow } from 'date-fns'
 
 export default function AdminDashboard() {
@@ -57,7 +58,7 @@ export default function AdminDashboard() {
   async function handleDeleteQuestion(id: string) {
     if (!confirm('Are you sure you want to completely delete this question?')) return
     const supabase = createClient()
-    const { error } = await supabase.from('questions').delete().eq('id', id)
+    const { error } = await softDeleteQuestion(supabase, id)
     
     if (error) {
       toast.error('Error deleting question: ' + error.message)
