@@ -4,6 +4,7 @@ import { ThemeToggle } from '@/components/theme-toggle'
 import { SiteLogo } from '@/components/site-logo'
 import { PlusCircle } from 'lucide-react'
 import { UserAccountMenu } from '@/components/user-account-menu'
+import { NotificationBell } from '@/components/notification-bell'
 
 export function AppHeader({ user }: { user: any }) {
   return (
@@ -18,6 +19,7 @@ export function AppHeader({ user }: { user: any }) {
           
           {user ? (
             <>
+              <NotificationBell userId={user.id} />
               <Link href="/ask">
                 <Button variant="default" size="sm" className="hidden sm:flex gap-2 rounded-full shadow-lg shadow-primary/20 hover:shadow-primary/35 border-gradient-brand">
                   <PlusCircle className="h-4 w-4" />

@@ -58,10 +58,19 @@ export function AnswerForm({ questionId, userId, onAnswerSubmitted }: AnswerForm
       return
     }
 
-    // 🐛 تم الإصلاح: تحديث عدد الإجابات في جدول الأسئلة لكي تظهر في الصفحة الرئيسية
-    const { data: qData } = await supabase.from('questions').select('answers_count').eq('id', questionId).single()
-    if (qData) {
-      await supabase.from('questions').update({ answers_count: (qData.answers_count || 0) + 1 }).eq('id', questionId)
+    const { data: questionRow } = await supabase
+      .from('questions')
+      .select('user_id, title')
+      .eq('id', questionId)
+      .single()
+
+    if (questionRow?.user_id && questionRow.user_id !== userId) {
+      await supabase.from('notifications').insert({
+        user_id: questionRow.user_id,
+        message: `New answer on "${questionRow.title}"`,
+        link: `/questions/${questionId}`,
+        type: 'new_answer',
+      })
     }
 
     toast.success('Answer posted!')

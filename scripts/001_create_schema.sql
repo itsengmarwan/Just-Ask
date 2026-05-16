@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   email TEXT NOT NULL,
   avatar_url TEXT,
   reputation_score INTEGER DEFAULT 0,
+  role TEXT DEFAULT 'student',
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -30,6 +31,8 @@ CREATE TABLE IF NOT EXISTS public.questions (
   content TEXT NOT NULL,
   is_anonymous BOOLEAN DEFAULT false,
   category_id UUID REFERENCES public.categories(id) ON DELETE SET NULL,
+  image_url TEXT,
+  is_resolved BOOLEAN DEFAULT false,
   upvotes_count INTEGER DEFAULT 0,
   answers_count INTEGER DEFAULT 0,
   views_count INTEGER DEFAULT 0,

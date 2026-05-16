@@ -29,7 +29,10 @@ export default function AdminDashboard() {
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     
-    if (!user || user.user_metadata?.role !== 'admin') {
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user?.id ?? '').maybeSingle()
+    const isAdmin = user?.user_metadata?.role === 'admin' || profile?.role === 'admin'
+
+    if (!user || !isAdmin) {
       toast.error('Access Denied. Admins only.')
       router.push('/home')
       return
@@ -38,7 +41,7 @@ export default function AdminDashboard() {
 
     const { data: qData } = await supabase
       .from('questions')
-      .select('*, profiles(full_name, email)')
+      .select('*, profiles:user_id (full_name, email)')
       .order('created_at', { ascending: false })
     
     const { data: pData } = await supabase

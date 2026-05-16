@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -18,35 +17,18 @@ export default function VerifyRolePage() {
     e.preventDefault()
     setIsLoading(true)
     
-    // الأكواد السرية تُقرأ من environment variables (لا تُكتب أبداً في الكود مباشرة)
-    const ADMIN_SECRET = process.env.NEXT_PUBLIC_ADMIN_SECRET
-    const PROF_SECRET = process.env.NEXT_PUBLIC_PROF_SECRET
-
-    if (!ADMIN_SECRET || !PROF_SECRET) {
-      toast.error('Server configuration error. Please contact support.')
-      setIsLoading(false)
-      return
-    }
-
-    let newRole = 'student'
-    if (code === ADMIN_SECRET) newRole = 'admin'
-    else if (code === PROF_SECRET) newRole = 'professor'
-    else {
-      toast.error('Invalid access code!')
-      setIsLoading(false)
-      return
-    }
-
-    const supabase = createClient()
-    
-    // تحديث بيانات المستخدم في Supabase (Role)
-    const { error } = await supabase.auth.updateUser({
-      data: { role: newRole }
+    const response = await fetch('/api/verify-role', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }),
     })
 
-    if (error) {
-      toast.error(error.message)
+    const result = await response.json().catch(() => ({}))
+
+    if (!response.ok) {
+      toast.error(result.error || 'Invalid access code!')
     } else {
+      const newRole = result.role as string
       toast.success(`Account successfully upgraded to ${newRole.toUpperCase()}!`)
       router.push(newRole === 'admin' ? '/admin' : '/professor')
       router.refresh()

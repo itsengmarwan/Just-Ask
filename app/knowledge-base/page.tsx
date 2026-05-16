@@ -13,7 +13,7 @@ async function getPublishedAnswers() {
       question_id,
       created_at,
       profiles:user_id (id, full_name, avatar_url),
-      questions:title
+      questions:question_id (title)
     `)
     .order('created_at', { ascending: false })
     .limit(30)
@@ -22,11 +22,13 @@ async function getPublishedAnswers() {
 }
 
 export default async function KnowledgeBasePage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
   const answers = await getPublishedAnswers()
 
   return (
     <div className="min-h-screen bg-background">
-      <AppHeader user={null} />
+      <AppHeader user={user} />
       <main className="mx-auto max-w-5xl px-4 py-8">
         <div className="mb-6">
           <p className="text-sm uppercase tracking-[0.2em] text-primary">Knowledge Base</p>

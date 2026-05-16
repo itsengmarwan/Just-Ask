@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { CategorySelect } from '@/components/category-select'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 
@@ -181,21 +181,7 @@ export default async function AskPage({ searchParams }: AskPageProps) {
                 <Input id="title" name="title" minLength={8} maxLength={180} placeholder="e.g., How to solve Integration by Parts in Math 1?" required className="bg-background/50 border-white/10 focus-visible:ring-primary h-12" />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="category" className="text-foreground font-semibold">Subject / Category <span className="text-destructive">*</span></Label>
-                <Select name="category_id" required>
-                  <SelectTrigger className="bg-background/50 border-white/10 focus:ring-primary h-12">
-                    <SelectValue placeholder="Select a subject..." />
-                  </SelectTrigger>
-                  <SelectContent className="bg-card/95 backdrop-blur-xl border-white/10">
-                    {categories?.map((cat) => (
-                      <SelectItem key={cat.id} value={cat.id} className="cursor-pointer hover:bg-primary/10 hover:text-primary">
-                        {cat.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <CategorySelect categories={categories ?? []} />
 
               <div className="space-y-2">
                 <Label htmlFor="content" className="text-foreground font-semibold">Details <span className="text-destructive">*</span></Label>

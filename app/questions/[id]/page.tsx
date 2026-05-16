@@ -38,22 +38,12 @@ async function getQuestion(id: string, userId?: string) {
   } as Question
 
   if (userId) {
-    let { data: upvote } = await supabase
+    const { data: upvote } = await supabase
       .from('question_upvotes')
       .select('id')
       .eq('user_id', userId)
       .eq('question_id', id)
       .maybeSingle()
-
-    if (!upvote) {
-      const { data: fallbackUpvote } = await supabase
-        .from('upvotes')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('question_id', id)
-        .maybeSingle()
-      upvote = fallbackUpvote
-    }
 
     question.user_has_upvoted = !!upvote
   }
@@ -87,19 +77,10 @@ async function getAnswers(questionId: string, userId?: string) {
   }))
 
   if (userId) {
-    let { data: upvotes } = await supabase
+    const { data: upvotes } = await supabase
       .from('answer_upvotes')
       .select('answer_id')
       .eq('user_id', userId)
-
-    if (!upvotes) {
-      const { data: fallbackUpvotes } = await supabase
-        .from('upvotes')
-        .select('answer_id')
-        .eq('user_id', userId)
-        .not('answer_id', 'is', null)
-      upvotes = fallbackUpvotes
-    }
 
     const upvotedIds = new Set(upvotes?.map((u) => u.answer_id) || [])
     return answersBase.map((a: any) => ({

@@ -39,10 +39,14 @@ export function AnswerCard({ answer, currentUserId, questionOwnerId, onAccept }:
 
     if (hasUpvoted) {
       const { error } = await supabase.from('answer_upvotes').delete().eq('user_id', currentUserId).eq('answer_id', answer.id)
-      if (!error) { setUpvoteCount((prev) => Math.max(0, prev - 1)); setHasUpvoted(false) }
+      if (error) toast.error('Failed to remove upvote')
+      else { setUpvoteCount((prev) => Math.max(0, prev - 1)); setHasUpvoted(false) }
     } else {
       const { error } = await supabase.from('answer_upvotes').insert({ user_id: currentUserId, answer_id: answer.id })
-      if (!error) { setUpvoteCount((prev) => prev + 1); setHasUpvoted(true) }
+      if (error) {
+        if (error.code === '23505') toast.error('Already upvoted')
+        else toast.error('Failed to upvote')
+      } else { setUpvoteCount((prev) => prev + 1); setHasUpvoted(true) }
     }
     setIsUpvoting(false)
   }
