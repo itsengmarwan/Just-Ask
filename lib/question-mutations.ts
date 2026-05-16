@@ -1,10 +1,24 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 export async function softDeleteQuestion(supabase: SupabaseClient, questionId: string) {
-  return supabase
-    .from('questions')
-    .update({ is_deleted: true, updated_at: new Date().toISOString() })
-    .eq('id', questionId)
+  const { error: rpcError } = await supabase.rpc('soft_delete_question', {
+    p_question_id: questionId,
+  })
+
+  if (!rpcError) return { data: null, error: null }
+
+  const rpcMissing =
+    rpcError.code === 'PGRST202' ||
+    rpcError.message?.toLowerCase().includes('could not find the function')
+
+  if (rpcMissing) {
+    return supabase
+      .from('questions')
+      .update({ is_deleted: true, updated_at: new Date().toISOString() })
+      .eq('id', questionId)
+  }
+
+  return { data: null, error: rpcError }
 }
 
 export async function toggleQuestionUpvote(
