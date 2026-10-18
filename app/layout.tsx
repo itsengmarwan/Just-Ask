@@ -9,12 +9,22 @@ const inter = Inter({ subsets: ["latin"] });
 const geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://just-ask-swart.vercel.app'),
   title: {
     default: 'Just Ask | E-JUST Community',
     template: '%s | Just Ask',
   },
   description: 'A dedicated platform for E-JUST university students to ask questions.',
-  generator: 'v0.app',
+  generator: 'itsengmarwan',
+  authors: [{ name: 'Marwan Tarek' }],
+  creator: 'Marwan Tarek',
+  openGraph: {
+    type: 'website',
+    url: 'https://just-ask-swart.vercel.app',
+    title: 'Just Ask | E-JUST Community',
+    description: 'A dedicated platform for E-JUST university students to ask questions.',
+    siteName: 'Just Ask',
+  },
   icons: {
     icon: '/icon.svg',
     shortcut: '/icon.svg',
