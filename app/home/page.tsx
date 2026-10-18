@@ -19,6 +19,8 @@ interface HomePageProps {
 async function getQuestions(categoryId?: string, sort?: string, searchQuery?: string, userId?: string) {
   const supabase = await createClient()
 
+  const normalizedSearch = searchQuery?.trim().slice(0, 80)
+
   let query = supabase
     .from('questions')
     .select(`
@@ -28,8 +30,9 @@ async function getQuestions(categoryId?: string, sort?: string, searchQuery?: st
     `)
 
   // تطبيق فلتر البحث
-  if (searchQuery) {
-    query = query.ilike('title', `%${searchQuery}%`)
+  if (normalizedSearch) {
+    const safeSearch = normalizedSearch.replace(/[\\%_]/g, '\\$&')
+    query = query.ilike('title', `%${safeSearch}%`)
   }
 
   if (categoryId) {

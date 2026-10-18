@@ -95,7 +95,11 @@ async function getAnswers(questionId: string, userId?: string) {
 // 🐛 تم الإصلاح: الزيادة أصبحت ديناميكية تعتمد على الرقم الحالي
 async function incrementViewCount(id: string) {
   const supabase = await createClient()
-  await supabase.rpc('increment_question_views', { p_question_id: id }).catch(() => {})
+  try {
+    await supabase.rpc('increment_question_views', { p_question_id: id })
+  } catch {
+    // View tracking must never prevent the question page from rendering.
+  }
 }
 
 export default async function QuestionPage(props: { params: Promise<{ id: string }> }) {

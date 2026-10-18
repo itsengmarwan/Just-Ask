@@ -180,11 +180,11 @@ export function ProfileContent({ user, profile, questions, stats }: ProfileConte
         </TabsList>
         <TabsContent value="questions" className="mt-4 space-y-3">
           {questions.length === 0 ? (
-            <Empty
-              icon={<UserIcon className="h-10 w-10" />}
-              title="No questions yet"
-              description="You haven't asked any questions. Start engaging with the community!"
-            />
+            <Empty>
+              <div className="mb-2 text-muted-foreground"><UserIcon className="h-10 w-10" /></div>
+              <div className="text-lg font-medium">No questions yet</div>
+              <p className="text-sm text-muted-foreground">You haven't asked any questions. Start engaging with the community!</p>
+            </Empty>
           ) : (
             questions.map((question) => (
               <QuestionCard

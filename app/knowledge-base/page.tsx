@@ -47,7 +47,7 @@ export default async function KnowledgeBasePage() {
             answers.map((answer) => (
               <Card key={answer.id}>
                 <CardHeader>
-                  <CardTitle>{answer.questions?.title || 'Untitled Question'}</CardTitle>
+                  <CardTitle>{(answer.questions as any)?.[0]?.title || (answer.questions as any)?.title || 'Untitled Question'}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground">By {typeof answer.profiles === 'object' ? (answer.profiles as any).full_name || 'Anonymous' : 'Anonymous'}</p>
